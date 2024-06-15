@@ -10,6 +10,7 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import cv2
 import tqdm
+from loguru import logger
 
 app = Flask(__name__)
 
@@ -34,6 +35,11 @@ for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
 detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
 
 def process_video(file_name):
+    
+    if file_name in PROCESSING_STATUS and PROCESSING_STATUS[file_name]['status'] == 'Completed':
+        logger.warning(f"File {file_name} has already been processed.")
+        return
+    
     try:
         # Load video
         file_path = os.path.join("/tmp", file_name)
@@ -174,20 +180,27 @@ def download_all_results():
     zip_buffer.seek(0)
     return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name='all_results.zip')
 
-@app.route('/delete-all', methods=['DELETE'])
+@app.route('/delete-input', methods=['DELETE'])
 def delete_all_files():
     try:
         objects_to_delete = minio_client.list_objects(BUCKET_NAME)
         for obj in objects_to_delete:
             minio_client.remove_object(BUCKET_NAME, obj.object_name)
-        
+
+        return jsonify({'message': 'All input files deleted successfully'})
+    except S3Error as e:
+        return jsonify({'error': str(e)})
+    
+@app.route('/delete-output', methods=['DELETE'])
+def delete_all_output_files():
+    try:
         results_to_delete = minio_client.list_objects(OUTPUT_BUCKET_NAME)
         for obj in results_to_delete:
             minio_client.remove_object(OUTPUT_BUCKET_NAME, obj.object_name)
 
         PROCESSING_STATUS.clear()
 
-        return jsonify({'message': 'All files and results deleted successfully'})
+        return jsonify({'message': 'All results deleted successfully'})
     except S3Error as e:
         return jsonify({'error': str(e)})
 
