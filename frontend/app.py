@@ -12,8 +12,6 @@ from config import FrontendConfig
 
 app = Flask(__name__)
 
-# MinIO client configuration
-
 logger.info(f"Connecting to MinIO at {FrontendConfig.STORAGE_HOST}")
 minio_client = Minio(
     FrontendConfig.STORAGE_HOST,
@@ -23,13 +21,10 @@ minio_client = Minio(
 )
 logger.info("Connected to MinIO.")
 
-PROCESSING_STATUS = {}
-
 # Ensure both buckets exist
 for bucket in [FrontendConfig.INPUT_BUCKET_NAME, FrontendConfig.OUTPUT_BUCKET_NAME]:
     if not minio_client.bucket_exists(bucket):
         minio_client.make_bucket(bucket)
-
 
 @app.route('/')
 def index():
@@ -48,37 +43,39 @@ def upload_file():
             # Upload the file to MinIO
             minio_client.fput_object(FrontendConfig.INPUT_BUCKET_NAME, file.filename, file_path)
             os.remove(file_path)
-            
-            # Initialize processing status
-            PROCESSING_STATUS[file.filename] = {'status': 'Uploaded'}
 
     return jsonify({'message': 'Files uploaded successfully. Ready to be processed.'})
 
 @app.route('/process/<filename>', methods=['POST'])
 def process_file(filename):
     try:
+        response = requests.post(f"{FrontendConfig.BACKEND_URL}/process-media-file", json={'filename': filename})
         
-        response = requests.post(f"{FrontendConfig.BACKEND_URL}/process-media-file", json={'filename': filename, 'processing_status': PROCESSING_STATUS})
+        # Check if the response contains valid JSON
+        try:
+            response_data = response.json()
+        except ValueError as e:
+            logger.error(f"Error decoding JSON response: {e}")
+            return jsonify({'error': 'Invalid response from backend.'})
 
-        resulting_processing_status = response.json().get('processing_status', None)
-        logger.info(f"Resulting processing status: {resulting_processing_status}")
-        if resulting_processing_status is not None:
-            PROCESSING_STATUS.update(resulting_processing_status)
-            
-        success = response.json().get('success', False)
-        
+        success = response_data.get('success', False)
         if success:
-            return jsonify({'message': 'File processed successfully'})
+            return jsonify({'message': 'File processing started successfully'})
         else:
-            return jsonify({'error': 'File processing failed'})        
+            return jsonify({'error': 'File processing failed'})
 
     except S3Error as e:
+        logger.error(f"S3Error: {e}")
         return jsonify({'error': str(e)})
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        return jsonify({'error': 'An error occurred while processing the file.'})
 
 @app.route('/status/<filename>', methods=['GET'])
 def check_status(filename):
-    status = PROCESSING_STATUS.get(filename, {'status': 'File not found'})
-    return jsonify(status)
+    response = requests.get(f"{FrontendConfig.BACKEND_URL}/status/{filename}")
+    # just relay response from backend
+    return jsonify(response.json())
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
@@ -130,8 +127,6 @@ def delete_all_output_files():
         results_to_delete = minio_client.list_objects(FrontendConfig.OUTPUT_BUCKET_NAME)
         for obj in results_to_delete:
             minio_client.remove_object(FrontendConfig.OUTPUT_BUCKET_NAME, obj.object_name)
-
-        PROCESSING_STATUS.clear()
 
         return jsonify({'message': 'All results deleted successfully'})
     except S3Error as e:

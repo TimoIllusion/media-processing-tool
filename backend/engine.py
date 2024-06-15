@@ -25,7 +25,6 @@ class AIBackend:
         self.output_bucket = BackendConfig.OUTPUT_BUCKET_NAME
 
     def fetch_and_process_video(self, file_name, processing_status) -> bool:
-
         # Download the file from MinIO
         file_path = os.path.join("/tmp", file_name)
         self.minio_client.fget_object(self.input_bucket, file_name, file_path)
@@ -43,10 +42,6 @@ class AIBackend:
             return False
 
     def process_video(self, file_name, processing_status):
-        if file_name in processing_status and processing_status[file_name]['status'] == 'Completed':
-            logger.warning(f"File {file_name} has already been processed.")
-            return None
-        
         try:
             # Load video
             file_path = os.path.join("/tmp", file_name)
