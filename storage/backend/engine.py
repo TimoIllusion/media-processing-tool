@@ -15,10 +15,10 @@ class AIBackend:
         self.detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
         
         self.minio_client = Minio(
-            BackendConfig.STORAGE_ENDPOINT,
+            f"{BackendConfig.STORAGE_ENDPOINT}:{BackendConfig.STORAGE_PORT}",
             access_key=BackendConfig.STORAGE_ACCESS_KEY,
             secret_key=BackendConfig.STORAGE_SECRET_KEY,
-            secure=False
+            secure=BackendConfig.USE_SSL
             )
         
         self.input_bucket = BackendConfig.INPUT_BUCKET_NAME

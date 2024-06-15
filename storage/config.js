@@ -6,6 +6,6 @@ module.exports = {
     MINIO_SECRET_KEY: 'minioadmin',
     INPUT_BUCKET_NAME: 'video-uploads',
     OUTPUT_BUCKET_NAME: 'output',
-    BACKEND_URL: 'http://localhost:5001' // URL to your backend service
+    BACKEND_URL: 'http://backend:5001' // URL to your backend service
   };
   

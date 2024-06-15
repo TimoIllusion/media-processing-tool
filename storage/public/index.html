@@ -86,25 +86,29 @@
       statusDiv.id = `status-${filename}`;
       statusDiv.classList.add('progress');
       document.getElementById('process-status').appendChild(statusDiv);
-
+    
       try {
         const response = await fetch(`/status/${filename}`);
         const result = await response.json();
-
+    
+        if (result.status === undefined) {
+          throw new Error('Status property is undefined');
+        }
+    
         if (result.status === 'Processing') {
           statusDiv.innerHTML = `<p>${filename}: ${result.status} ${result.current_frame}/${result.total_frames} </p>`;
         } else {
           statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
         }
-
+    
         if (result.status === 'Completed' || result.status.startsWith('Error')) {
           listProcessedResults();
         }
       } catch (error) {
-        statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error}</p>`;
+        statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error.message}</p>`;
       }
     }
-
+    
     async function listUploadedFiles() {
       const resultsDiv = document.getElementById('upload-status');
       resultsDiv.innerHTML = ''; // Clear the content before appending new results

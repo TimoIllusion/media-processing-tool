@@ -18,22 +18,22 @@ const minioClient = new Minio.Client({
 });
 
 // Ensure both buckets exist
-[minioClient.bucketExists(INPUT_BUCKET_NAME), minioClient.bucketExists(OUTPUT_BUCKET_NAME)].forEach((bucketPromise, idx) => {
-  bucketPromise.then(exists => {
+const ensureBucketExists = async (bucketName) => {
+  try {
+    const exists = await minioClient.bucketExists(bucketName);
     if (!exists) {
-      const bucketName = idx === 0 ? INPUT_BUCKET_NAME : OUTPUT_BUCKET_NAME;
-      minioClient.makeBucket(bucketName, 'us-east-1', err => {
-        if (err) {
-          console.log(`Error creating bucket ${bucketName}:`, err);
-        } else {
-          console.log(`Bucket ${bucketName} created successfully.`);
-        }
-      });
+      await minioClient.makeBucket(bucketName, 'us-east-1');
+      console.log(`Bucket ${bucketName} created successfully.`);
+    } else {
+      console.log(`Bucket ${bucketName} already exists.`);
     }
-  }).catch(err => {
-    console.log('Error checking bucket existence:', err);
-  });
-});
+  } catch (err) {
+    console.log(`Error checking/creating bucket ${bucketName}:`, err);
+  }
+};
+
+ensureBucketExists(INPUT_BUCKET_NAME);
+ensureBucketExists(OUTPUT_BUCKET_NAME);
 
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
@@ -94,11 +94,17 @@ app.get('/status/:filename', async (req, res) => {
   try {
     const response = await fetch(`${BACKEND_URL}/status/${filename}`);
     const result = await response.json();
+
+    if (result.status === undefined) {
+      throw new Error('Status property is undefined');
+    }
+
     res.json(result);
   } catch (error) {
     res.json({ error: error.message });
   }
 });
+
 
 app.get('/download/:filename', (req, res) => {
   const { filename } = req.params;
@@ -128,19 +134,22 @@ app.get('/list-results', async (req, res) => {
 });
 
 app.get('/download-all-results', async (req, res) => {
-  const zipBuffer = Buffer.alloc(0);
-  const zip = new require('node-zip')();
+  const zip = new (require('node-zip'))();
   const stream = minioClient.listObjects(OUTPUT_BUCKET_NAME, '', true);
+  const zipBuffer = [];
+
   stream.on('data', async obj => {
     const data = await minioClient.getObject(OUTPUT_BUCKET_NAME, obj.name);
     zip.file(obj.name, data);
   });
+
   stream.on('end', () => {
     const data = zip.generate({ base64: false, compression: 'DEFLATE' });
     res.set('Content-Type', 'application/zip');
     res.set('Content-Disposition', 'attachment; filename=all_results.zip');
     res.send(data);
   });
+
   stream.on('error', err => res.status(500).json({ error: err.message }));
 });
 
@@ -160,7 +169,7 @@ app.delete('/delete-output', async (req, res) => {
 
 app.get('/reset', async (req, res) => {
   try {
-    await fetch(`${BACKEND_URL}/reset`);
+    const response = await fetch(`${BACKEND_URL}/reset`);
     res.json({ message: 'Backend reset successfully' });
   } catch (error) {
     res.json({ error: error.message });

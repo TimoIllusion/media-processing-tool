@@ -44,7 +44,8 @@ def check_status(filename):
     if filename not in PROCESSING_STATUS:
         return jsonify({'status': 'File not yet processed.'}), 404
     else:
-        return PROCESSING_STATUS[filename]
+        return jsonify(PROCESSING_STATUS[filename])
+
     
 @app.route('/reset', methods=['GET'])
 def reset():
@@ -53,4 +54,4 @@ def reset():
     return jsonify({'success': True}), 200
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=BackendConfig.PORT, debug=True)
+    app.run(host='0.0.0.0', port=BackendConfig.PORT, debug=True)
