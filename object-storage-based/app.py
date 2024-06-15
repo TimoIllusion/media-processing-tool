@@ -35,7 +35,6 @@ for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
 detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
 
 def process_video(file_name):
-    
     if file_name in PROCESSING_STATUS and PROCESSING_STATUS[file_name]['status'] == 'Completed':
         logger.warning(f"File {file_name} has already been processed.")
         return
@@ -190,7 +189,7 @@ def delete_all_files():
         return jsonify({'message': 'All input files deleted successfully'})
     except S3Error as e:
         return jsonify({'error': str(e)})
-    
+
 @app.route('/delete-output', methods=['DELETE'])
 def delete_all_output_files():
     try:

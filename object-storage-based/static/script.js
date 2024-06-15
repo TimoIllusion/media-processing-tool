@@ -100,20 +100,35 @@ async function downloadAllResults() {
     window.location.href = '/download-all-results';
 }
 
-async function deleteAllFiles() {
-    if (confirm('Are you sure you want to delete all files and results?')) {
-        const response = await fetch('/delete-all', {
+async function deleteAllInputFiles() {
+    if (confirm('Are you sure you want to delete all input files?')) {
+        const response = await fetch('/delete-input', {
             method: 'DELETE'
         });
         const result = await response.json();
-        const statusDiv = document.getElementById('process-status');
+        const statusDiv = document.getElementById('upload-status');
         statusDiv.innerHTML = `<p>${result.message}</p>`; // Overwrite the content
 
         listUploadedFiles();
+    } else {
+        const statusDiv = document.getElementById('upload-status');
+        statusDiv.innerHTML = `<p>Deletion of input files canceled.</p>`; // Overwrite the content if the user cancels
+    }
+}
+
+async function deleteAllOutputFiles() {
+    if (confirm('Are you sure you want to delete all output files?')) {
+        const response = await fetch('/delete-output', {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+        const statusDiv = document.getElementById('results');
+        statusDiv.innerHTML = `<p>${result.message}</p>`; // Overwrite the content
+
         listProcessedResults();
     } else {
-        const statusDiv = document.getElementById('process-status');
-        statusDiv.innerHTML = `<p>Deletion canceled.</p>`; // Overwrite the content if the user cancels
+        const statusDiv = document.getElementById('results');
+        statusDiv.innerHTML = `<p>Deletion of output files canceled.</p>`; // Overwrite the content if the user cancels
     }
 }
 

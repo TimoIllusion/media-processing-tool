@@ -44,6 +44,12 @@ h1 {
 .buttons .list-button:hover {
     background-color: #218838;
 }
+.buttons .delete-button {
+    background-color: #dc3545;
+}
+.buttons .delete-button:hover {
+    background-color: #c82333;
+}
 #results, #upload-status, #process-status {
     border: 1px solid #ddd;
     padding: 10px;

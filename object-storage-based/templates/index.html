@@ -17,6 +17,7 @@
             </form>
             <div class="buttons">
                 <button type="button" class="list-button" onclick="listUploadedFiles()">List Current Uploaded Files</button>
+                <button type="button" class="delete-button" onclick="deleteAllInputFiles()">Delete All Input Files</button>
             </div>
             <div id="upload-status"></div>
         </div>
@@ -35,7 +36,7 @@
             <div class="buttons">
                 <button type="button" onclick="listProcessedResults()">List Current Results</button>
                 <button type="button" onclick="downloadAllResults()">Download All Results</button>
-                <button type="button" onclick="deleteAllFiles()">Delete All Files and Results</button>
+                <button type="button" class="delete-button" onclick="deleteAllOutputFiles()">Delete All Output Files</button>
             </div>
             <div id="results"></div>
         </div>
