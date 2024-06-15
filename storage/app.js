@@ -95,7 +95,7 @@ app.get('/status/:filename', async (req, res) => {
     const response = await fetch(`${BACKEND_URL}/status/${filename}`);
     const result = await response.json();
 
-    if (result.status === undefined) {
+    if (!result || typeof result.status === 'undefined') {
       throw new Error('Status property is undefined');
     }
 
@@ -105,15 +105,16 @@ app.get('/status/:filename', async (req, res) => {
   }
 });
 
-
 app.get('/download/:filename', (req, res) => {
   const { filename } = req.params;
-  const filePath = path.join('/tmp', filename);
-  minioClient.fgetObject(OUTPUT_BUCKET_NAME, filename, filePath, err => {
+
+  minioClient.getObject(OUTPUT_BUCKET_NAME, filename, (err, dataStream) => {
     if (err) {
-      return res.json({ error: 'File not found' });
+      return res.status(404).json({ error: 'File not found' });
     }
-    res.sendFile(filePath);
+
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    dataStream.pipe(res);
   });
 });
 
@@ -136,7 +137,6 @@ app.get('/list-results', async (req, res) => {
 app.get('/download-all-results', async (req, res) => {
   const zip = new (require('node-zip'))();
   const stream = minioClient.listObjects(OUTPUT_BUCKET_NAME, '', true);
-  const zipBuffer = [];
 
   stream.on('data', async obj => {
     const data = await minioClient.getObject(OUTPUT_BUCKET_NAME, obj.name);
