@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Upload and Processing</title>
+</head>
+<body>
+    <h1>Video Upload and Processing</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" id="file-input" name="file" multiple>
+        <button type="button" onclick="uploadFiles()">Upload</button>
+    </form>
+    <button type="button" onclick="downloadAllResults()">Download All Results</button>
+    <button type="button" onclick="deleteAllFiles()">Delete All Files and Results</button>
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        async function uploadFiles() {
+            const input = document.getElementById('file-input');
+            const files = input.files;
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            statusDiv.innerHTML = '';
+            resultsDiv.innerHTML = '';
+
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('file', file);
+            }
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                statusDiv.innerHTML += `<p>${result.message}</p>`;
+                listUploadedFiles();
+                listProcessedResults();
+            } catch (error) {
+                statusDiv.innerHTML += `<p>Error uploading files: ${error}</p>`;
+            }
+        }
+
+        async function listUploadedFiles() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            const response = await fetch('/list-files');
+            const files = await response.json();
+
+            files.forEach(file => {
+                resultsDiv.innerHTML += `<p>Uploaded: ${file}</p>`;
+            });
+        }
+
+        async function listProcessedResults() {
+            const resultsDiv = document.getElementById('results');
+            const response = await fetch('/list-results');
+            const results = await response.json();
+
+            results.forEach(result => {
+                resultsDiv.innerHTML += `<p><a href="/download/${result}">${result}</a></p>`;
+            });
+        }
+
+        async function downloadAllResults() {
+            window.location.href = '/download-all-results';
+        }
+
+        async function deleteAllFiles() {
+            const response = await fetch('/delete-all', {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML += `<p>${result.message}</p>`;
+            listUploadedFiles();
+            listProcessedResults();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            listUploadedFiles();
+            listProcessedResults();
+        });
+    </script>
+</body>
+</html>
