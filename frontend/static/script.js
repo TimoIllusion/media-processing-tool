@@ -23,11 +23,11 @@ async function uploadFiles() {
 }
 
 async function processFiles() {
+    const processStatusDiv = document.getElementById('process-status');
+    processStatusDiv.innerHTML = ''; // Clear the content before processing
+
     const response = await fetch('/list-files');
     const files = await response.json();
-
-    const processStatusDiv = document.getElementById('process-status');
-    processStatusDiv.innerHTML = '';
 
     for (const file of files) {
         try {
@@ -42,7 +42,20 @@ async function processFiles() {
     }
 }
 
+async function resetProcessingState() {
+    const statusDiv = document.getElementById('process-status');
+    statusDiv.innerHTML = ''; // Clear the content before resetting
+
+    const response = await fetch('/reset');
+    const results = await response.json();
+
+    statusDiv.innerHTML = `<p>${results.message}</p>`;
+}
+
 async function checkAllStatus() {
+    const processStatusDiv = document.getElementById('process-status');
+    processStatusDiv.innerHTML = ''; // Clear the content before checking all status
+
     const response = await fetch('/list-files');
     const files = await response.json();
 
@@ -50,7 +63,6 @@ async function checkAllStatus() {
         checkStatus(file);
     }
 }
-
 
 async function checkStatus(filename) {
     const statusDiv = document.getElementById(`status-${filename}`) || document.createElement('div');
@@ -62,16 +74,12 @@ async function checkStatus(filename) {
         const response = await fetch(`/status/${filename}`);
         const result = await response.json();
 
-
         if (result.status === 'Processing') {
             statusDiv.innerHTML = `<p>${filename}: ${result.status} ${result.current_frame}/${result.total_frames} </p>`;
-        }
-        else
-        {
+        } else {
             statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
         }
 
-        
         if (result.status === 'Completed' || result.status.startsWith('Error')) {
             listProcessedResults();
         }
@@ -79,7 +87,6 @@ async function checkStatus(filename) {
         statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error}</p>`;
     }
 }
-
 
 async function listUploadedFiles() {
     const resultsDiv = document.getElementById('upload-status');

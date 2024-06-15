@@ -32,6 +32,9 @@ class AIBackend:
         # Process the file
         result_path = self.process_video(file_name, processing_status)
         
+        # Clean up the downloaded file
+        os.remove(file_path)
+        
         # Upload the result JSON to the 'output' bucket
         if result_path is not None:
             self.minio_client.fput_object(self.output_bucket, f"{file_name}.json", result_path)

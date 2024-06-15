@@ -131,6 +131,14 @@ def delete_all_output_files():
         return jsonify({'message': 'All results deleted successfully'})
     except S3Error as e:
         return jsonify({'error': str(e)})
+    
+@app.route('/reset', methods=['GET'])
+def reset():
+    try:
+        requests.get(f"{FrontendConfig.BACKEND_URL}/reset")
+        return jsonify({'message': 'Backend reset successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)
