@@ -84,3 +84,11 @@ form {
     align-items: center;
     gap: 10px;
 }
+
+/* Footer CSS */
+.footer {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-color: #f3f3f3;
+}
