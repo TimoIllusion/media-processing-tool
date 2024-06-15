@@ -1,16 +1,14 @@
-from flask import Flask, render_template, request, jsonify, send_file
-from minio import Minio
-from minio.error import S3Error
 import os
 import json
 import zipfile
 import io
-import numpy as np
-import tensorflow as tf
-import tensorflow_hub as hub
-import cv2
-import tqdm
-from loguru import logger
+
+from flask import Flask, render_template, request, jsonify, send_file
+from minio import Minio
+from minio.error import S3Error
+
+
+from ai_backend import AIBackend
 
 app = Flask(__name__)
 
@@ -31,78 +29,9 @@ for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
     if not minio_client.bucket_exists(bucket):
         minio_client.make_bucket(bucket)
 
-# Load the pre-trained object detection model
-detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
+# Initialize AI backend
+ai_backend = AIBackend()
 
-def process_video(file_name):
-    if file_name in PROCESSING_STATUS and PROCESSING_STATUS[file_name]['status'] == 'Completed':
-        logger.warning(f"File {file_name} has already been processed.")
-        return
-    
-    try:
-        # Load video
-        file_path = os.path.join("/tmp", file_name)
-        cap = cv2.VideoCapture(file_path)
-        
-        frame_results = []
-        
-        frame_count = 0
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        PROCESSING_STATUS[file_name] = {
-            'status': 'Processing',
-            'current_frame': frame_count,
-            'total_frames': total_frames
-        }
-        
-        progress = tqdm.tqdm(total=total_frames, desc=f"Processing {file_name}")
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = detector(frame_rgb[np.newaxis, ...])
-            result = {key: value.numpy() for key, value in results.items()}
-
-            frame_predictions = []
-            for i in range(len(result['detection_scores'][0])):
-                if result['detection_scores'][0][i] >= 0.5:  # Filter out low-confidence predictions
-                    bbox = result['detection_boxes'][0][i].tolist()
-                    score = result['detection_scores'][0][i].tolist()
-                    frame_predictions.append({
-                        'bbox': bbox,
-                        'score': score
-                    })
-            
-            frame_results.append({
-                'frame': frame_count,
-                'predictions': frame_predictions
-            })
-            
-            frame_count += 1
-            PROCESSING_STATUS[file_name]['current_frame'] = frame_count
-            progress.update(1)
-
-        cap.release()
-        
-        result_data = {
-            'file_name': file_name,
-            'status': 'Processed',
-            'frame_results': frame_results
-        }
-
-        # Save the results to a JSON file
-        result_path = os.path.join("/tmp", f"{file_name}.json")
-        with open(result_path, 'w') as f:
-            json.dump(result_data, f)
-
-        # Upload the result JSON to the 'output' bucket
-        minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
-        os.remove(result_path)
-        
-        PROCESSING_STATUS[file_name]['status'] = 'Completed'
-    except Exception as e:
-        PROCESSING_STATUS[file_name]['status'] = f'Error: {str(e)}'
 
 @app.route('/')
 def index():
@@ -135,9 +64,16 @@ def process_file(filename):
         minio_client.fget_object(BUCKET_NAME, filename, file_path)
         
         # Process the file
-        process_video(filename)
+        result_path = ai_backend.process_video(filename, PROCESSING_STATUS)
         
-        return jsonify({'message': 'File processed successfully'})
+        # Upload the result JSON to the 'output' bucket
+        if result_path is not None:
+            minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{filename}.json", result_path)
+            os.remove(result_path)
+            
+            return jsonify({'message': 'File processed successfully'})
+        else:
+            return jsonify({'message': 'File has already been processed'})
     except S3Error as e:
         return jsonify({'error': str(e)})
 

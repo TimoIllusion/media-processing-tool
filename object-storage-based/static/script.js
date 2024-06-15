@@ -72,10 +72,6 @@ async function checkStatus(filename) {
         }
 
         
-
-
-
-
         if (result.status === 'Completed' || result.status.startsWith('Error')) {
             listProcessedResults();
         }
