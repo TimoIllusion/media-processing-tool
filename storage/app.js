@@ -3,6 +3,8 @@ const path = require('path');
 const Minio = require('minio');
 const multer = require('multer');
 const fetch = require('node-fetch');
+const JSZip = require('jszip');
+const streamBuffers = require('stream-buffers');
 const { MINIO_ENDPOINT, MINIO_PORT, MINIO_USE_SSL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, INPUT_BUCKET_NAME, OUTPUT_BUCKET_NAME, BACKEND_URL } = require('./config');
 
 const app = express();
@@ -135,23 +137,53 @@ app.get('/list-results', async (req, res) => {
 });
 
 app.get('/download-all-results', async (req, res) => {
-  const zip = new (require('node-zip'))();
+  const zip = new JSZip();
+  const files = [];
+
   const stream = minioClient.listObjects(OUTPUT_BUCKET_NAME, '', true);
-
-  stream.on('data', async obj => {
-    const data = await minioClient.getObject(OUTPUT_BUCKET_NAME, obj.name);
-    zip.file(obj.name, data);
+  stream.on('data', obj => {
+      files.push(obj.name);
   });
 
-  stream.on('end', () => {
-    const data = zip.generate({ base64: false, compression: 'DEFLATE' });
-    res.set('Content-Type', 'application/zip');
-    res.set('Content-Disposition', 'attachment; filename=all_results.zip');
-    res.send(data);
+  stream.on('end', async () => {
+      try {
+          for (const fileName of files) {
+              const data = await new Promise((resolve, reject) => {
+                  const bufferStream = new streamBuffers.WritableStreamBuffer();
+                  minioClient.getObject(OUTPUT_BUCKET_NAME, fileName, (err, dataStream) => {
+                      if (err) {
+                          reject(err);
+                      } else {
+                          dataStream.pipe(bufferStream).on('finish', () => {
+                              resolve(bufferStream.getContents());
+                          });
+                      }
+                  });
+              });
+              zip.file(fileName, data);
+          }
+
+          res.setHeader('Content-Type', 'application/zip');
+          res.setHeader('Content-Disposition', 'attachment; filename=all_results.zip');
+
+          zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+              .pipe(res)
+              .on('finish', () => {
+                  res.status(200).end(); // Ensure the response stream is closed correctly
+              });
+
+      } catch (error) {
+          console.error('Failed to create zip:', error);
+          res.status(500).send("Failed to download files.");
+      }
   });
 
-  stream.on('error', err => res.status(500).json({ error: err.message }));
+  stream.on('error', error => {
+      console.error('Error listing objects:', error);
+      res.status(500).send("Failed to list files.");
+  });
 });
+
 
 app.delete('/delete-input', async (req, res) => {
   const stream = minioClient.listObjects(INPUT_BUCKET_NAME, '', true);
@@ -178,4 +210,10 @@ app.get('/reset', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`App running at http://localhost:${port}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Application specific logging, throwing an error, or other logic here
 });

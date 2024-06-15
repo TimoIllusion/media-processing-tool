@@ -1,7 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Video Uploader</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Uploading and Processing</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      color: #333;
+      margin-top: 20px;
+    }
+    #uploadForm {
+      margin: 20px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    #uploadForm input[type="file"] {
+      display: block;
+      margin-bottom: 10px;
+    }
+    #uploadForm button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    #uploadForm button:hover {
+      background-color: #0056b3;
+    }
+    .status-container {
+      width: 80%;
+      max-width: 800px;
+      margin: 20px 0;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    .status-container p {
+      margin: 5px 0;
+    }
+    .actions {
+      display: flex;
+      justify-content: center;
+      margin: 20px;
+    }
+    .actions button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 0 10px;
+    }
+    .actions button:hover {
+      background-color: #0056b3;
+    }
+    a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <h1>Upload Videos</h1>
@@ -9,15 +84,20 @@
     <input type="file" name="videos" id="videos" accept="video/*" multiple>
     <button type="submit">Upload</button>
   </form>
-  <div id="upload-status"></div>
-  <div id="process-status"></div>
-  <div id="results"></div>
-  <button onclick="processFiles()">Process Files</button>
-  <button onclick="resetProcessingState()">Reset Processing State</button>
-  <button onclick="checkAllStatus()">Check All Status</button>
-  <button onclick="downloadAllResults()">Download All Results</button>
-  <button onclick="deleteAllInputFiles()">Delete All Input Files</button>
-  <button onclick="deleteAllOutputFiles()">Delete All Output Files</button>
+  
+  <div id="upload-status" class="status-container"></div>
+  <div id="process-status" class="status-container"></div>
+  <div id="results" class="status-container"></div>
+  
+  <div class="actions">
+    <button onclick="processFiles()">Process Files</button>
+    <button onclick="resetProcessingState()">Reset Processing State</button>
+    <button onclick="checkAllStatus()">Check All Status</button>
+    <button onclick="downloadAllResults()">Download All Results</button>
+    <button onclick="deleteAllInputFiles()">Delete All Input Files</button>
+    <button onclick="deleteAllOutputFiles()">Delete All Output Files</button>
+  </div>
+
   <script>
     document.getElementById('uploadForm').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -86,21 +166,21 @@
       statusDiv.id = `status-${filename}`;
       statusDiv.classList.add('progress');
       document.getElementById('process-status').appendChild(statusDiv);
-    
+
       try {
         const response = await fetch(`/status/${filename}`);
         const result = await response.json();
-    
+
         if (result.status === undefined) {
           throw new Error('Status property is undefined');
         }
-    
+
         if (result.status === 'Processing') {
           statusDiv.innerHTML = `<p>${filename}: ${result.status} ${result.current_frame}/${result.total_frames} </p>`;
         } else {
           statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
         }
-    
+
         if (result.status === 'Completed' || result.status.startsWith('Error')) {
           listProcessedResults();
         }
@@ -108,7 +188,7 @@
         statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error.message}</p>`;
       }
     }
-    
+
     async function listUploadedFiles() {
       const resultsDiv = document.getElementById('upload-status');
       resultsDiv.innerHTML = ''; // Clear the content before appending new results
