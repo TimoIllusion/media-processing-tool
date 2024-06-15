@@ -8,7 +8,7 @@ import io
 import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
-from PIL import Image
+import cv2
 
 app = Flask(__name__)
 
@@ -22,6 +22,7 @@ minio_client = Minio(
 
 BUCKET_NAME = "video-uploads"
 OUTPUT_BUCKET_NAME = "output"
+PROCESSING_STATUS = {}
 
 # Ensure both buckets exist
 for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
@@ -31,41 +32,64 @@ for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
 # Load the pre-trained object detection model
 detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
 
-def process_and_save_result(file_name):
-    # Load image
-    file_path = os.path.join("/tmp", file_name)
-    image = Image.open(file_path)
-    image_np = np.array(image)
+def process_video(file_name):
+    try:
+        PROCESSING_STATUS[file_name] = 'Processing'
+        # Load video
+        file_path = os.path.join("/tmp", file_name)
+        cap = cv2.VideoCapture(file_path)
+        
+        frame_results = []
+        
+        frame_count = 0
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = detector(frame_rgb[np.newaxis, ...])
+            result = {key: value.numpy() for key, value in results.items()}
 
-    # Run object detection
-    results = detector(image_np[np.newaxis, ...])
-    result = {key: value.numpy() for key, value in results.items()}
-
-    # Format the results into a simple JSON structure
-    predictions = []
-    for i in range(len(result['detection_scores'][0])):
-        if result['detection_scores'][0][i] >= 0.5:  # Filter out low-confidence predictions
-            bbox = result['detection_boxes'][0][i].tolist()
-            score = result['detection_scores'][0][i].tolist()
-            predictions.append({
-                'bbox': bbox,
-                'score': score
+            frame_predictions = []
+            for i in range(len(result['detection_scores'][0])):
+                if result['detection_scores'][0][i] >= 0.5:  # Filter out low-confidence predictions
+                    bbox = result['detection_boxes'][0][i].tolist()
+                    score = result['detection_scores'][0][i].tolist()
+                    frame_predictions.append({
+                        'bbox': bbox,
+                        'score': score
+                    })
+            
+            frame_results.append({
+                'frame': frame_count,
+                'predictions': frame_predictions
             })
+            
+            print("Processed frame", frame_count)
+            
+            frame_count += 1
 
-    result_data = {
-        'file_name': file_name,
-        'status': 'Processed',
-        'predictions': predictions
-    }
+        cap.release()
+        
+        result_data = {
+            'file_name': file_name,
+            'status': 'Processed',
+            'frame_results': frame_results
+        }
 
-    # Save the results to a JSON file
-    result_path = os.path.join("/tmp", f"{file_name}.json")
-    with open(result_path, 'w') as f:
-        json.dump(result_data, f)
+        # Save the results to a JSON file
+        result_path = os.path.join("/tmp", f"{file_name}.json")
+        with open(result_path, 'w') as f:
+            json.dump(result_data, f)
 
-    # Upload the result JSON to the 'output' bucket
-    minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
-    os.remove(result_path)
+        # Upload the result JSON to the 'output' bucket
+        minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
+        os.remove(result_path)
+        
+        PROCESSING_STATUS[file_name] = 'Completed'
+    except Exception as e:
+        PROCESSING_STATUS[file_name] = f'Error: {str(e)}'
 
 @app.route('/')
 def index():
@@ -83,19 +107,37 @@ def upload_file():
 
             # Upload the file to MinIO
             minio_client.fput_object(BUCKET_NAME, file.filename, file_path)
-            
-            # Process the file and save the result
-            process_and_save_result(file.filename)
-
             os.remove(file_path)
+            
+            # Initialize processing status
+            PROCESSING_STATUS[file.filename] = 'Uploaded'
 
-    return jsonify({'message': 'Files uploaded and processed successfully'})
+    return jsonify({'message': 'Files uploaded successfully. Ready to be processed.'})
+
+@app.route('/process/<filename>', methods=['POST'])
+def process_file(filename):
+    try:
+        # Download the file from MinIO
+        file_path = os.path.join("/tmp", filename)
+        minio_client.fget_object(BUCKET_NAME, filename, file_path)
+        
+        # Process the file
+        process_video(filename)
+        
+        return jsonify({'message': 'File processed successfully'})
+    except S3Error as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/status/<filename>', methods=['GET'])
+def check_status(filename):
+    status = PROCESSING_STATUS.get(filename, 'File not found')
+    return jsonify({'status': status})
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
     try:
         file_path = os.path.join("/tmp", filename)
-        minio_client.fget_object(BUCKET_NAME, filename, file_path)
+        minio_client.fget_object(OUTPUT_BUCKET_NAME, filename, file_path)
         return send_file(file_path, as_attachment=True)
     except S3Error:
         return jsonify({'error': 'File not found'})
@@ -134,6 +176,8 @@ def delete_all_files():
         results_to_delete = minio_client.list_objects(OUTPUT_BUCKET_NAME)
         for obj in results_to_delete:
             minio_client.remove_object(OUTPUT_BUCKET_NAME, obj.object_name)
+
+        PROCESSING_STATUS.clear()
 
         return jsonify({'message': 'All files and results deleted successfully'})
     except S3Error as e:

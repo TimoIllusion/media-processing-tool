@@ -4,26 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Upload and Processing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .buttons button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        #results, #upload-status, #process-status {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
     <h1>Video Upload and Processing</h1>
-    <form id="upload-form" enctype="multipart/form-data">
-        <input type="file" id="file-input" name="file" multiple>
-        <button type="button" onclick="uploadFiles()">Upload</button>
-    </form>
-    <button type="button" onclick="downloadAllResults()">Download All Results</button>
-    <button type="button" onclick="deleteAllFiles()">Delete All Files and Results</button>
-    <div id="status"></div>
-    <div id="results"></div>
+    <div class="container">
+        <div class="section">
+            <h2>Upload Files</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="file-input" name="file" multiple>
+                <button type="button" onclick="uploadFiles()">Upload</button>
+            </form>
+            <div id="upload-status"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Actions</h2>
+            <div class="buttons">
+                <button type="button" onclick="processFiles()">Process All Files</button>
+                <button type="button" onclick="downloadAllResults()">Download All Results</button>
+                <button type="button" onclick="deleteAllFiles()">Delete All Files and Results</button>
+            </div>
+            <div id="process-status"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Current Files and Results</h2>
+            <div class="buttons">
+                <button type="button" onclick="listUploadedFiles()">List Current Uploaded Files</button>
+                <button type="button" onclick="listProcessedResults()">List Current Results</button>
+            </div>
+            <div id="results"></div>
+        </div>
+    </div>
 
     <script>
         async function uploadFiles() {
             const input = document.getElementById('file-input');
             const files = input.files;
-            const statusDiv = document.getElementById('status');
-            const resultsDiv = document.getElementById('results');
-            statusDiv.innerHTML = '';
-            resultsDiv.innerHTML = '';
+            const uploadStatusDiv = document.getElementById('upload-status');
+            uploadStatusDiv.innerHTML = '';
 
             const formData = new FormData();
             for (const file of files) {
@@ -36,17 +88,58 @@
                     body: formData
                 });
                 const result = await response.json();
-                statusDiv.innerHTML += `<p>${result.message}</p>`;
-                listUploadedFiles();
-                listProcessedResults();
+                uploadStatusDiv.innerHTML = `<p>${result.message}</p>`;
+                listUploadedFiles(); // Call listUploadedFiles to refresh the list
             } catch (error) {
-                statusDiv.innerHTML += `<p>Error uploading files: ${error}</p>`;
+                uploadStatusDiv.innerHTML = `<p>Error uploading files: ${error}</p>`;
             }
+        }
+
+        async function processFiles() {
+            const response = await fetch('/list-files');
+            const files = await response.json();
+
+            const processStatusDiv = document.getElementById('process-status');
+            processStatusDiv.innerHTML = '';
+
+            for (const file of files) {
+                try {
+                    const processResponse = await fetch(`/process/${file}`, {
+                        method: 'POST'
+                    });
+                    const processResult = await processResponse.json();
+                    processStatusDiv.innerHTML += `<p>${file}: ${processResult.message}</p>`;
+                    checkStatus(file);
+                } catch (error) {
+                    processStatusDiv.innerHTML += `<p>${file}: Error processing file: ${error}</p>`;
+                }
+            }
+        }
+
+        async function checkStatus(filename) {
+            const processStatusDiv = document.getElementById('process-status');
+
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/status/${filename}`);
+                    const result = await response.json();
+                    if (result.status === 'Completed' || result.status.startsWith('Error')) {
+                        clearInterval(interval);
+                        processStatusDiv.innerHTML += `<p>${filename}: ${result.status}</p>`;
+                        listProcessedResults();
+                    } else {
+                        processStatusDiv.innerHTML += `<p>${filename}: ${result.status}</p>`;
+                    }
+                } catch (error) {
+                    clearInterval(interval);
+                    processStatusDiv.innerHTML += `<p>${filename}: Error checking status: ${error}</p>`;
+                }
+            }, 5000); // Check status every 5 seconds
         }
 
         async function listUploadedFiles() {
             const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
+            resultsDiv.innerHTML = ''; // Clear the content before appending new results
 
             const response = await fetch('/list-files');
             const files = await response.json();
@@ -58,6 +151,8 @@
 
         async function listProcessedResults() {
             const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear the content before appending new results
+
             const response = await fetch('/list-results');
             const results = await response.json();
 
@@ -71,14 +166,20 @@
         }
 
         async function deleteAllFiles() {
-            const response = await fetch('/delete-all', {
-                method: 'DELETE'
-            });
-            const result = await response.json();
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerHTML += `<p>${result.message}</p>`;
-            listUploadedFiles();
-            listProcessedResults();
+            if (confirm('Are you sure you want to delete all files and results?')) {
+                const response = await fetch('/delete-all', {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                const statusDiv = document.getElementById('process-status');
+                statusDiv.innerHTML = `<p>${result.message}</p>`; // Overwrite the content
+
+                listUploadedFiles();
+                listProcessedResults();
+            } else {
+                const statusDiv = document.getElementById('process-status');
+                statusDiv.innerHTML = `<p>Deletion canceled.</p>`; // Overwrite the content if the user cancels
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
