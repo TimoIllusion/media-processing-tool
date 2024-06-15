@@ -4,6 +4,9 @@ Sure, here's a README file focusing on the overview, setup, and usage of the Fla
 
 A tool to process videos using a web application. Right now a simple detection model from tensorflow hub is used to process the videos.
 
+
+![GUI of media-processing-tool](assets/gui.png)
+
 ## Setup
 
 ### Prerequisites
