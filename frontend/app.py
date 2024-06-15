@@ -14,9 +14,9 @@ app = Flask(__name__)
 
 # MinIO client configuration
 
-logger.info(f"Connecting to MinIO at {FrontendConfig.BACKEND_STORAGE_HOST}")
+logger.info(f"Connecting to MinIO at {FrontendConfig.STORAGE_HOST}")
 minio_client = Minio(
-    FrontendConfig.BACKEND_STORAGE_HOST,
+    FrontendConfig.STORAGE_HOST,
     access_key=FrontendConfig.STORAGE_ACCESS_KEY,
     secret_key=FrontendConfig.STORAGE_SECRET_KEY,
     secure=False
@@ -61,6 +61,7 @@ def process_file(filename):
         response = requests.post(f"{FrontendConfig.BACKEND_URL}/process-media-file", json={'filename': filename, 'processing_status': PROCESSING_STATUS})
 
         resulting_processing_status = response.json().get('processing_status', None)
+        logger.info(f"Resulting processing status: {resulting_processing_status}")
         if resulting_processing_status is not None:
             PROCESSING_STATUS.update(resulting_processing_status)
             

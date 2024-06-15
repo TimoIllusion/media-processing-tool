@@ -8,32 +8,34 @@ from minio import Minio
 from tqdm import tqdm
 from loguru import logger
 
+from config import BackendConfig
+
 class AIBackend:
     def __init__(self):
         self.detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
         
         self.minio_client = Minio(
-            "localhost:9000",
-            access_key="minioadmin",
-            secret_key="minioadmin",
+            BackendConfig.STORAGE_HOST,
+            access_key=BackendConfig.STORAGE_ACCESS_KEY,
+            secret_key=BackendConfig.STORAGE_SECRET_KEY,
             secure=False
             )
         
-        self.BUCKET_NAME = "video-uploads"
-        self.OUTPUT_BUCKET_NAME = "output"
+        self.input_bucket = BackendConfig.INPUT_BUCKET_NAME
+        self.output_bucket = BackendConfig.OUTPUT_BUCKET_NAME
 
     def fetch_and_process_video(self, file_name, processing_status) -> bool:
 
         # Download the file from MinIO
         file_path = os.path.join("/tmp", file_name)
-        self.minio_client.fget_object(self.BUCKET_NAME, file_name, file_path)
+        self.minio_client.fget_object(self.input_bucket, file_name, file_path)
         
         # Process the file
         result_path = self.process_video(file_name, processing_status)
         
         # Upload the result JSON to the 'output' bucket
         if result_path is not None:
-            self.minio_client.fput_object(self.OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
+            self.minio_client.fput_object(self.output_bucket, f"{file_name}.json", result_path)
             os.remove(result_path)
             
             return True

@@ -19,10 +19,13 @@ def process_media_file():
         return jsonify({'error': 'Processing failed. processing_status is None'}), 402
 
     result = backend.fetch_and_process_video(filename, processing_status)
-    if result:
-        return jsonify({'message': 'Processing started.'}), 200
-    else:
-        return jsonify({'error': 'Processing failed.'}), 500
     
+    # the response should be the processing status
+    
+    if result:
+        return jsonify({'processing_status': processing_status})
+    else:
+        return jsonify({'error': "Processing failed."})
+
 if __name__ == '__main__':
     app.run(host='localhost', port=BackendConfig.PORT)
