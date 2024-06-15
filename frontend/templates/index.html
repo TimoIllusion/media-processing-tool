@@ -17,7 +17,7 @@
             </form>
             <div class="buttons">
                 <button type="button" class="info-button" onclick="listUploadedFiles()">List Current Uploaded Files</button>
-                <button type="button" class="delete-button" onclick="deleteAllInputFiles()">Delete All Input Files</button>
+                <button type="button" class="delete-button" onclick="deleteAllInputFiles()">Delete All Uploaded Files</button>
             </div>
             <div id="upload-status"></div>
         </div>
@@ -25,7 +25,7 @@
         <div class="section">
             <h2>Process Files</h2>
             <div class="buttons">
-                <button type="button" class="process-button" onclick="processFiles()">Process All Files</button>
+                <button type="button" class="process-button" onclick="processFiles()">Process All Unprocessed Uploaded Files</button>
                 <button type="button" class="info-button" onclick="checkAllStatus()">Check Processing Status</button>
                 <button type="button" class="delete-button" onclick="resetProcessingState()">Reset Processing Status</button>
             </div>
@@ -35,9 +35,9 @@
         <div class="section">
             <h2>Manage Results</h2>
             <div class="buttons">
-                <button type="button" class="info-button" onclick="listProcessedResults()">List Current Results</button>
-                <button type="button" class="info-button" onclick="downloadAllResults()">Download All Results</button>
-                <button type="button" class="delete-button" onclick="deleteAllOutputFiles()">Delete All Output Files</button>
+                <button type="button" class="info-button" onclick="listProcessedResults()">List Current Result Files</button>
+                <button type="button" class="info-button" onclick="downloadAllResults()">Download All Result Files</button>
+                <button type="button" class="delete-button" onclick="deleteAllOutputFiles()">Delete All Result Files</button>
             </div>
             <div id="results"></div>
         </div>
