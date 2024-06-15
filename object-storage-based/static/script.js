@@ -31,11 +31,10 @@ async function processFiles() {
 
     for (const file of files) {
         try {
-            const processResponse = await fetch(`/process/${file}`, {
+            await fetch(`/process/${file}`, {
                 method: 'POST'
             });
-            const processResult = await processResponse.json();
-            processStatusDiv.innerHTML += `<p>${file}: ${processResult.message}</p>`;
+            // Start checking status immediately after initiating the processing
             checkStatus(file);
         } catch (error) {
             processStatusDiv.innerHTML += `<p>${file}: Error processing file: ${error}</p>`;
@@ -52,6 +51,7 @@ async function checkAllStatus() {
     }
 }
 
+
 async function checkStatus(filename) {
     const statusDiv = document.getElementById(`status-${filename}`) || document.createElement('div');
     statusDiv.id = `status-${filename}`;
@@ -61,19 +61,32 @@ async function checkStatus(filename) {
     try {
         const response = await fetch(`/status/${filename}`);
         const result = await response.json();
-        if (result.status === 'Completed' || result.status.startsWith('Error')) {
+
+
+        if (result.status === 'Processing') {
+            statusDiv.innerHTML = `<p>${filename}: ${result.status} ${result.current_frame}/${result.total_frames} </p>`;
+        }
+        else
+        {
             statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
+        }
+
+        
+
+
+
+
+        if (result.status === 'Completed' || result.status.startsWith('Error')) {
             listProcessedResults();
-        } else {
-            statusDiv.innerHTML = `<p>${filename}: ${result.status} (Frame ${result.current_frame} of ${result.total_frames})</p>`;
         }
     } catch (error) {
         statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error}</p>`;
     }
 }
 
+
 async function listUploadedFiles() {
-    const resultsDiv = document.getElementById('results');
+    const resultsDiv = document.getElementById('upload-status');
     resultsDiv.innerHTML = ''; // Clear the content before appending new results
 
     const response = await fetch('/list-files');
