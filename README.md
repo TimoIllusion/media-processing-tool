@@ -4,14 +4,24 @@ Tools to process videos using a web application. Right now a simple detection mo
 
 ![GUI of media-processing-tool](assets/gui.png)
 
-## Full-Stack 
+## Prerequisites
+
+- Python 3.7 or higher (only for backend/frontend/server tool)
+- docker and docker-compose installed
+
+**Clone the repository (on each system):**
+   ```shell
+   https://github.com/TimoIllusion/media-processing-tool.git
+   cd media-processing-tool
+   ```
+
+## Full-Stack Tool
 
 Javascript based frontend, flask backend, all in docker-compose, no client-side code. User just has to access the website.
 
 **Bring up:**
 ```shell
-https://github.com/TimoIllusion/media-processing-tool.git
-cd media-processing-tool/full-stack-js
+cd full-stack-js
 docker compose up -d --build
 ```
 
@@ -22,28 +32,15 @@ Go to `http://<your_host>:5000` to access the web interface.
 docker compose down
 ```
 
-## Backend/Frontend/Server
+## Backend/Frontend/Server Tool
 
 Flask based backend/frontend, client-side upload.
 
-### Prerequisites
-
-- Python 3.7 or higher
-- docker and docker-compose installed
-
-### Configuration
+### Installation
 
 Configure the ``config.py`` files in each dir as well as the docker compose file in ``storage``.
 
-### Installation
-
-1. **Clone the repository (on each system):**
-   ```shell
-   https://github.com/TimoIllusion/media-processing-tool.git
-   cd media-processing-tool
-   ```
-
-2. **Create virtual env for system backend:**
+1. **Create virtual env for system backend:**
    ```shell
    cd backend
    python -m venv .env 
@@ -52,7 +49,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    cd ..
    ```
 
-3. **Ensure MinIO is running on localhost or separate system:**
+2. **Ensure MinIO is running on localhost or separate system:**
 
    You can run MinIO using Docker:
    ```shell
@@ -61,7 +58,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    cd ..
    ```
 
-4. **Create virtual env for frontend on frontend system**
+3. **Create virtual env for frontend on frontend system**
    ```shell
    cd frontend
    python -m venv .env 
