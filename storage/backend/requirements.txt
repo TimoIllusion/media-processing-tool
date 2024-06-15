@@ -1,0 +1,9 @@
+opencv-python
+tensorflow
+tensorflow-hub
+tensorflow-cpu
+pillow
+flask
+minio
+tqdm
+loguru
