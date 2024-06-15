@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Uploader</title>
+</head>
+<body>
+  <h1>Upload Videos</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="videos" id="videos" accept="video/*" multiple>
+    <button type="submit">Upload</button>
+  </form>
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const formData = new FormData();
+      const files = document.getElementById('videos').files;
+      for (let i = 0; i < files.length; i++) {
+        formData.append('videos', files[i]);
+      }
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      }).then(response => response.text())
+      .then(result => {
+        alert(result);
+      }).catch(error => {
+        console.error('Error:', error);
+      });
+    });
+  </script>
+</body>
+</html>
