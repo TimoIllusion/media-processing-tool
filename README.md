@@ -25,7 +25,7 @@ cd full-stack-js
 docker compose up -d --build
 ```
 
-Go to `http://<your_host>:5000` to access the web interface.
+Go to `http://<your_host>:3000` to access the web interface.
 
 **Shutdown:**
 ```shell
