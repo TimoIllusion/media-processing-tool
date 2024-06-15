@@ -1,5 +1,7 @@
 flask
 minio
+loguru
+tqdm
 
 opencv-python
 tensorflow

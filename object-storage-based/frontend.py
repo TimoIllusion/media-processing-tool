@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template_string, send_file
+from flask import Flask, request, jsonify, send_file, render_template_string
 from minio import Minio
 from minio.error import S3Error
 import os
@@ -9,6 +9,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 import cv2
+import tqdm
+
+from loguru import logger
 
 app = Flask(__name__)
 
@@ -34,7 +37,6 @@ detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
 
 def process_video(file_name):
     try:
-        PROCESSING_STATUS[file_name] = 'Processing'
         # Load video
         file_path = os.path.join("/tmp", file_name)
         cap = cv2.VideoCapture(file_path)
@@ -42,6 +44,15 @@ def process_video(file_name):
         frame_results = []
         
         frame_count = 0
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        PROCESSING_STATUS[file_name] = {
+            'status': 'Processing',
+            'current_frame': frame_count,
+            'total_frames': total_frames
+        }
+        
+        # use tqdm
+        progress = tqdm.tqdm(total=total_frames, desc=f"Processing {file_name}")
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
@@ -66,9 +77,9 @@ def process_video(file_name):
                 'predictions': frame_predictions
             })
             
-            print("Processed frame", frame_count)
-            
             frame_count += 1
+            PROCESSING_STATUS[file_name]['current_frame'] = frame_count
+            progress.update(1)
 
         cap.release()
         
@@ -87,9 +98,9 @@ def process_video(file_name):
         minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
         os.remove(result_path)
         
-        PROCESSING_STATUS[file_name] = 'Completed'
+        PROCESSING_STATUS[file_name]['status'] = 'Completed'
     except Exception as e:
-        PROCESSING_STATUS[file_name] = f'Error: {str(e)}'
+        PROCESSING_STATUS[file_name]['status'] = f'Error: {str(e)}'
 
 @app.route('/')
 def index():
@@ -110,7 +121,7 @@ def upload_file():
             os.remove(file_path)
             
             # Initialize processing status
-            PROCESSING_STATUS[file.filename] = 'Uploaded'
+            PROCESSING_STATUS[file.filename] = {'status': 'Uploaded'}
 
     return jsonify({'message': 'Files uploaded successfully. Ready to be processed.'})
 
@@ -130,8 +141,8 @@ def process_file(filename):
 
 @app.route('/status/<filename>', methods=['GET'])
 def check_status(filename):
-    status = PROCESSING_STATUS.get(filename, 'File not found')
-    return jsonify({'status': status})
+    status = PROCESSING_STATUS.get(filename, {'status': 'File not found'})
+    return jsonify(status)
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):

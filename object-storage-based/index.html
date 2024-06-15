@@ -36,6 +36,9 @@
             max-height: 200px;
             overflow-y: auto;
         }
+        .progress {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -56,6 +59,7 @@
                 <button type="button" onclick="processFiles()">Process All Files</button>
                 <button type="button" onclick="downloadAllResults()">Download All Results</button>
                 <button type="button" onclick="deleteAllFiles()">Delete All Files and Results</button>
+                <button type="button" onclick="checkAllStatus()">Processing Status</button>
             </div>
             <div id="process-status"></div>
         </div>
@@ -116,8 +120,21 @@
             }
         }
 
+        async function checkAllStatus() {
+            const response = await fetch('/list-files');
+            const files = await response.json();
+
+            for (const file of files) {
+                checkStatus(file);
+            }
+        }
+
         async function checkStatus(filename) {
             const processStatusDiv = document.getElementById('process-status');
+            const statusDiv = document.createElement('div');
+            statusDiv.id = `status-${filename}`;
+            statusDiv.classList.add('progress');
+            processStatusDiv.appendChild(statusDiv);
 
             const interval = setInterval(async () => {
                 try {
@@ -125,14 +142,14 @@
                     const result = await response.json();
                     if (result.status === 'Completed' || result.status.startsWith('Error')) {
                         clearInterval(interval);
-                        processStatusDiv.innerHTML += `<p>${filename}: ${result.status}</p>`;
+                        statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
                         listProcessedResults();
                     } else {
-                        processStatusDiv.innerHTML += `<p>${filename}: ${result.status}</p>`;
+                        statusDiv.innerHTML = `<p>${filename}: ${result.status} (Frame ${result.current_frame} of ${result.total_frames})</p>`;
                     }
                 } catch (error) {
                     clearInterval(interval);
-                    processStatusDiv.innerHTML += `<p>${filename}: Error checking status: ${error}</p>`;
+                    statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error}</p>`;
                 }
             }, 5000); // Check status every 5 seconds
         }
