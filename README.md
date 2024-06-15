@@ -10,6 +10,8 @@ Javascript based frontend, flask backend, all in docker-compose, no client-side 
 
 **Bring up:**
 ```shell
+https://github.com/TimoIllusion/media-processing-tool.git
+cd media-processing-tool/full-stack-js
 docker compose up -d --build
 ```
 
