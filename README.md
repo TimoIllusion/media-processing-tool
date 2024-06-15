@@ -30,6 +30,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    python -m venv .env 
    source .env/bin/activate  # On Windows, use `.env\Scripts\activate`
    pip install -r requirements.txt
+   cd ..
    ```
 
 3. **Ensure MinIO is running on localhost or separate system:**
@@ -38,6 +39,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    ```shell
    cd storage
    docker-compose up -d
+   cd ..
    ```
 
 4. **Create virtual env for frontend on frontend system**
@@ -46,6 +48,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    python -m venv .env 
    source .env/bin/activate  # On Windows, use `.env\Scripts\activate`
    pip install -r requirements.txt
+   cd ..
    ```
 
 ## Usage
@@ -57,6 +60,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    cd backend
    source .env/bin/activate  # On Windows, use `.env\Scripts\activate`
    python app.py
+   cd .. # if on same system
    ```
 
    On system 2 (client), can be the same system:
