@@ -1,0 +1,7 @@
+flask
+minio
+
+tensorflow
+tensorflow-hub
+tensorflow-cpu
+pillow

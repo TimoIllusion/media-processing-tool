@@ -5,6 +5,10 @@ import os
 import json
 import zipfile
 import io
+import numpy as np
+import tensorflow as tf
+import tensorflow_hub as hub
+from PIL import Image
 
 app = Flask(__name__)
 
@@ -24,17 +28,41 @@ for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
     if not minio_client.bucket_exists(bucket):
         minio_client.make_bucket(bucket)
 
+# Load the pre-trained object detection model
+detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
+
 def process_and_save_result(file_name):
-    # Simulate processing the file
+    # Load image
+    file_path = os.path.join("/tmp", file_name)
+    image = Image.open(file_path)
+    image_np = np.array(image)
+
+    # Run object detection
+    results = detector(image_np[np.newaxis, ...])
+    result = {key: value.numpy() for key, value in results.items()}
+
+    # Format the results into a simple JSON structure
+    predictions = []
+    for i in range(len(result['detection_scores'][0])):
+        if result['detection_scores'][0][i] >= 0.5:  # Filter out low-confidence predictions
+            bbox = result['detection_boxes'][0][i].tolist()
+            score = result['detection_scores'][0][i].tolist()
+            predictions.append({
+                'bbox': bbox,
+                'score': score
+            })
+
     result_data = {
         'file_name': file_name,
         'status': 'Processed',
-        'details': 'This file has been successfully processed.'
+        'predictions': predictions
     }
+
+    # Save the results to a JSON file
     result_path = os.path.join("/tmp", f"{file_name}.json")
     with open(result_path, 'w') as f:
         json.dump(result_data, f)
-    
+
     # Upload the result JSON to the 'output' bucket
     minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
     os.remove(result_path)
