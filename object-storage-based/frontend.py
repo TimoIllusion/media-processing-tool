@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask, render_template, request, jsonify, send_file
 from minio import Minio
 from minio.error import S3Error
 import os
@@ -10,8 +10,6 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import cv2
 import tqdm
-
-from loguru import logger
 
 app = Flask(__name__)
 
@@ -51,7 +49,6 @@ def process_video(file_name):
             'total_frames': total_frames
         }
         
-        # use tqdm
         progress = tqdm.tqdm(total=total_frames, desc=f"Processing {file_name}")
         while cap.isOpened():
             ret, frame = cap.read()
@@ -104,7 +101,7 @@ def process_video(file_name):
 
 @app.route('/')
 def index():
-    return render_template_string(open("index.html").read())
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
