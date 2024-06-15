@@ -158,23 +158,19 @@
             statusDiv.id = `status-${filename}`;
             statusDiv.classList.add('progress');
             document.getElementById('process-status').appendChild(statusDiv);
-
-            const interval = setInterval(async () => {
-                try {
-                    const response = await fetch(`/status/${filename}`);
-                    const result = await response.json();
-                    if (result.status === 'Completed' || result.status.startsWith('Error')) {
-                        clearInterval(interval);
-                        statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
-                        listProcessedResults();
-                    } else {
-                        statusDiv.innerHTML = `<p>${filename}: ${result.status} (Frame ${result.current_frame} of ${result.total_frames})</p>`;
-                    }
-                } catch (error) {
-                    clearInterval(interval);
-                    statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error}</p>`;
+        
+            try {
+                const response = await fetch(`/status/${filename}`);
+                const result = await response.json();
+                if (result.status === 'Completed' || result.status.startsWith('Error')) {
+                    statusDiv.innerHTML = `<p>${filename}: ${result.status}</p>`;
+                    listProcessedResults();
+                } else {
+                    statusDiv.innerHTML = `<p>${filename}: ${result.status} (Frame ${result.current_frame} of ${result.total_frames})</p>`;
                 }
-            }, 5000); // Check status every 5 seconds
+            } catch (error) {
+                statusDiv.innerHTML = `<p>${filename}: Error checking status: ${error}</p>`;
+            }
         }
 
         async function listUploadedFiles() {
