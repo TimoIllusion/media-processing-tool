@@ -7,14 +7,21 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
             margin: 20px;
+            padding: 20px;
         }
         h1 {
             text-align: center;
+            color: #333;
         }
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         .section {
             margin-bottom: 20px;
@@ -24,10 +31,19 @@
             flex-wrap: wrap;
             gap: 10px;
             justify-content: center;
+            margin-top: 10px;
         }
         .buttons button {
             padding: 10px 20px;
             cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .buttons button:hover {
+            background-color: #0056b3;
         }
         #results, #upload-status, #process-status {
             border: 1px solid #ddd;
@@ -35,9 +51,17 @@
             margin-top: 10px;
             max-height: 200px;
             overflow-y: auto;
+            background: #f9f9f9;
+            border-radius: 4px;
         }
         .progress {
             margin-top: 10px;
+        }
+        form {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
     </style>
 </head>
@@ -130,11 +154,10 @@
         }
 
         async function checkStatus(filename) {
-            const processStatusDiv = document.getElementById('process-status');
-            const statusDiv = document.createElement('div');
+            const statusDiv = document.getElementById(`status-${filename}`) || document.createElement('div');
             statusDiv.id = `status-${filename}`;
             statusDiv.classList.add('progress');
-            processStatusDiv.appendChild(statusDiv);
+            document.getElementById('process-status').appendChild(statusDiv);
 
             const interval = setInterval(async () => {
                 try {
