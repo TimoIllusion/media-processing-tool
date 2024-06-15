@@ -1,10 +1,6 @@
-flask
-minio
-loguru
-tqdm
-
 opencv-python
 tensorflow
 tensorflow-hub
 tensorflow-cpu
 pillow
+flask

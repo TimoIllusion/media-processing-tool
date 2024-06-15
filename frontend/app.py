@@ -5,30 +5,26 @@ import io
 from flask import Flask, render_template, request, jsonify, send_file
 from minio import Minio
 from minio.error import S3Error
+import requests
 
-from ai_backend import AIBackend
+from frontend.config import FrontendConfig
 
 app = Flask(__name__)
 
 # MinIO client configuration
 minio_client = Minio(
-    "localhost:9000",
-    access_key="minioadmin",
-    secret_key="minioadmin",
+    FrontendConfig.BACKEND_STORAGE_URL,
+    access_key=FrontendConfig.STORAGE_ACCESS_KEY,
+    secret_key=FrontendConfig.STORAGE_SECRET_KEY,
     secure=False
 )
 
-BUCKET_NAME = "video-uploads"
-OUTPUT_BUCKET_NAME = "output"
 PROCESSING_STATUS = {}
 
 # Ensure both buckets exist
-for bucket in [BUCKET_NAME, OUTPUT_BUCKET_NAME]:
+for bucket in [FrontendConfig.INPUT_BUCKET_NAME, FrontendConfig.OUTPUT_BUCKET_NAME]:
     if not minio_client.bucket_exists(bucket):
         minio_client.make_bucket(bucket)
-
-# Initialize AI backend
-ai_backend = AIBackend()
 
 
 @app.route('/')
@@ -46,7 +42,7 @@ def upload_file():
             file.save(file_path)
 
             # Upload the file to MinIO
-            minio_client.fput_object(BUCKET_NAME, file.filename, file_path)
+            minio_client.fput_object(FrontendConfig.INPUT_BUCKET_NAME, file.filename, file_path)
             os.remove(file_path)
             
             # Initialize processing status
@@ -57,8 +53,19 @@ def upload_file():
 @app.route('/process/<filename>', methods=['POST'])
 def process_file(filename):
     try:
+        # send a request to the backend to process the video, with filename and processing_Status
+        
+        response = requests.post(f'{FrontendConfig.BACKEND_URL}/process-video', files={'file': open(f'/tmp/{filename}', 'rb')})
+        success = response.status_code == 200
 
-        success = ai_backend.fetch_and_process_video(filename, PROCESSING_STATUS)
+        if success:
+            PROCESSING_STATUS[filename] = {'status': 'Processing'}
+        else:
+            PROCESSING_STATUS[filename] = {'status': 'Failed'}
+
+        return jsonify({'message': 'File processing started successfully'})
+            
+        
         
         if success:
             return jsonify({'message': 'File processed successfully'})
@@ -77,20 +84,20 @@ def check_status(filename):
 def download_file(filename):
     try:
         file_path = os.path.join("/tmp", filename)
-        minio_client.fget_object(OUTPUT_BUCKET_NAME, filename, file_path)
+        minio_client.fget_object(FrontendConfig.OUTPUT_BUCKET_NAME, filename, file_path)
         return send_file(file_path, as_attachment=True)
     except S3Error:
         return jsonify({'error': 'File not found'})
 
 @app.route('/list-files', methods=['GET'])
 def list_files():
-    objects = minio_client.list_objects(BUCKET_NAME)
+    objects = minio_client.list_objects(FrontendConfig.INPUT_BUCKET_NAME)
     files = [obj.object_name for obj in objects]
     return jsonify(files)
 
 @app.route('/list-results', methods=['GET'])
 def list_results():
-    objects = minio_client.list_objects(OUTPUT_BUCKET_NAME)
+    objects = minio_client.list_objects(FrontendConfig.OUTPUT_BUCKET_NAME)
     results = [obj.object_name for obj in objects]
     return jsonify(results)
 
@@ -98,9 +105,9 @@ def list_results():
 def download_all_results():
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        objects = minio_client.list_objects(OUTPUT_BUCKET_NAME)
+        objects = minio_client.list_objects(FrontendConfig.OUTPUT_BUCKET_NAME)
         for obj in objects:
-            file_data = minio_client.get_object(OUTPUT_BUCKET_NAME, obj.object_name)
+            file_data = minio_client.get_object(FrontendConfig.OUTPUT_BUCKET_NAME, obj.object_name)
             zip_file.writestr(obj.object_name, file_data.read())
 
     zip_buffer.seek(0)
@@ -109,9 +116,9 @@ def download_all_results():
 @app.route('/delete-input', methods=['DELETE'])
 def delete_all_files():
     try:
-        objects_to_delete = minio_client.list_objects(BUCKET_NAME)
+        objects_to_delete = minio_client.list_objects(FrontendConfig.INPUT_BUCKET_NAME)
         for obj in objects_to_delete:
-            minio_client.remove_object(BUCKET_NAME, obj.object_name)
+            minio_client.remove_object(FrontendConfig.INPUT_BUCKET_NAME, obj.object_name)
 
         return jsonify({'message': 'All input files deleted successfully'})
     except S3Error as e:
@@ -120,9 +127,9 @@ def delete_all_files():
 @app.route('/delete-output', methods=['DELETE'])
 def delete_all_output_files():
     try:
-        results_to_delete = minio_client.list_objects(OUTPUT_BUCKET_NAME)
+        results_to_delete = minio_client.list_objects(FrontendConfig.OUTPUT_BUCKET_NAME)
         for obj in results_to_delete:
-            minio_client.remove_object(OUTPUT_BUCKET_NAME, obj.object_name)
+            minio_client.remove_object(FrontendConfig.OUTPUT_BUCKET_NAME, obj.object_name)
 
         PROCESSING_STATUS.clear()
 

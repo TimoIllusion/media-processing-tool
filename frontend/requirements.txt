@@ -1,0 +1,4 @@
+flask
+minio
+loguru
+tqdm
