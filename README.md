@@ -1,11 +1,28 @@
 # media-processing-tool
 
-A tool to process videos using a web application. Right now a simple detection model from tensorflow hub is used to process the videos.
-
+Tools to process videos using a web application. Right now a simple detection model from tensorflow hub is used to process the videos.
 
 ![GUI of media-processing-tool](assets/gui.png)
 
-## Setup
+## Full-Stack 
+
+Javascript based frontend, flask backend, all in docker-compose, no client-side code. User just has to access the website.
+
+**Bring up:**
+```shell
+docker compose up -d --build
+```
+
+Go to `http://<your_host>:5000` to access the web interface.
+
+**Shutdown:**
+```shell
+docker compose down
+```
+
+## Backend/Frontend/Server
+
+Flask based backend/frontend, client-side upload.
 
 ### Prerequisites
 
@@ -51,7 +68,7 @@ Configure the ``config.py`` files in each dir as well as the docker compose file
    cd ..
    ```
 
-## Usage
+### Usage
 
 1. **Start the Server and Client application:**
 
