@@ -1,31 +1,44 @@
 import os
 import json
-import cv2
+
 import numpy as np
-import tensorflow as tf
+import cv2
 import tensorflow_hub as hub
+from minio import Minio
 from tqdm import tqdm
 from loguru import logger
 
 class AIBackend:
     def __init__(self):
         self.detector = hub.load("https://tfhub.dev/tensorflow/ssd_mobilenet_v2/2")
+        
+        self.minio_client = Minio(
+            "localhost:9000",
+            access_key="minioadmin",
+            secret_key="minioadmin",
+            secure=False
+            )
+        
+        self.BUCKET_NAME = "video-uploads"
+        self.OUTPUT_BUCKET_NAME = "output"
 
-    def process_image(self, frame):
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = self.detector(frame_rgb[np.newaxis, ...])
-        result = {key: value.numpy() for key, value in results.items()}
+    def fetch_and_process_video(self, file_name, processing_status) -> bool:
 
-        frame_predictions = []
-        for i in range(len(result['detection_scores'][0])):
-            if result['detection_scores'][0][i] >= 0.5:  # Filter out low-confidence predictions
-                bbox = result['detection_boxes'][0][i].tolist()
-                score = result['detection_scores'][0][i].tolist()
-                frame_predictions.append({
-                    'bbox': bbox,
-                    'score': score
-                })
-        return frame_predictions
+        # Download the file from MinIO
+        file_path = os.path.join("/tmp", file_name)
+        self.minio_client.fget_object(self.BUCKET_NAME, file_name, file_path)
+        
+        # Process the file
+        result_path = self.process_video(file_name, processing_status)
+        
+        # Upload the result JSON to the 'output' bucket
+        if result_path is not None:
+            self.minio_client.fput_object(self.OUTPUT_BUCKET_NAME, f"{file_name}.json", result_path)
+            os.remove(result_path)
+            
+            return True
+        else:
+            return False
 
     def process_video(self, file_name, processing_status):
         if file_name in processing_status and processing_status[file_name]['status'] == 'Completed':
@@ -87,3 +100,19 @@ class AIBackend:
         except Exception as e:
             processing_status[file_name]['status'] = f'Error: {str(e)}'
             raise
+        
+    def process_image(self, frame):
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.detector(frame_rgb[np.newaxis, ...])
+        result = {key: value.numpy() for key, value in results.items()}
+
+        frame_predictions = []
+        for i in range(len(result['detection_scores'][0])):
+            if result['detection_scores'][0][i] >= 0.5:  # Filter out low-confidence predictions
+                bbox = result['detection_boxes'][0][i].tolist()
+                score = result['detection_scores'][0][i].tolist()
+                frame_predictions.append({
+                    'bbox': bbox,
+                    'score': score
+                })
+        return frame_predictions

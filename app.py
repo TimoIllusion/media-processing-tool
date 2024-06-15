@@ -1,12 +1,10 @@
 import os
-import json
 import zipfile
 import io
 
 from flask import Flask, render_template, request, jsonify, send_file
 from minio import Minio
 from minio.error import S3Error
-
 
 from ai_backend import AIBackend
 
@@ -59,21 +57,14 @@ def upload_file():
 @app.route('/process/<filename>', methods=['POST'])
 def process_file(filename):
     try:
-        # Download the file from MinIO
-        file_path = os.path.join("/tmp", filename)
-        minio_client.fget_object(BUCKET_NAME, filename, file_path)
+
+        success = ai_backend.fetch_and_process_video(filename, PROCESSING_STATUS)
         
-        # Process the file
-        result_path = ai_backend.process_video(filename, PROCESSING_STATUS)
-        
-        # Upload the result JSON to the 'output' bucket
-        if result_path is not None:
-            minio_client.fput_object(OUTPUT_BUCKET_NAME, f"{filename}.json", result_path)
-            os.remove(result_path)
-            
+        if success:
             return jsonify({'message': 'File processed successfully'})
         else:
-            return jsonify({'message': 'File has already been processed'})
+            return jsonify({'error': 'File processing failed'})        
+
     except S3Error as e:
         return jsonify({'error': str(e)})
 
