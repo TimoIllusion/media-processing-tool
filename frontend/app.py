@@ -6,18 +6,22 @@ from flask import Flask, render_template, request, jsonify, send_file
 from minio import Minio
 from minio.error import S3Error
 import requests
+from loguru import logger
 
-from frontend.config import FrontendConfig
+from config import FrontendConfig
 
 app = Flask(__name__)
 
 # MinIO client configuration
+
+logger.info(f"Connecting to MinIO at {FrontendConfig.BACKEND_STORAGE_HOST}")
 minio_client = Minio(
-    FrontendConfig.BACKEND_STORAGE_URL,
+    FrontendConfig.BACKEND_STORAGE_HOST,
     access_key=FrontendConfig.STORAGE_ACCESS_KEY,
     secret_key=FrontendConfig.STORAGE_SECRET_KEY,
     secure=False
 )
+logger.info("Connected to MinIO.")
 
 PROCESSING_STATUS = {}
 
@@ -53,19 +57,14 @@ def upload_file():
 @app.route('/process/<filename>', methods=['POST'])
 def process_file(filename):
     try:
-        # send a request to the backend to process the video, with filename and processing_Status
         
-        response = requests.post(f'{FrontendConfig.BACKEND_URL}/process-video', files={'file': open(f'/tmp/{filename}', 'rb')})
-        success = response.status_code == 200
+        response = requests.post(f"{FrontendConfig.BACKEND_URL}/process-media-file", json={'filename': filename, 'processing_status': PROCESSING_STATUS})
 
-        if success:
-            PROCESSING_STATUS[filename] = {'status': 'Processing'}
-        else:
-            PROCESSING_STATUS[filename] = {'status': 'Failed'}
-
-        return jsonify({'message': 'File processing started successfully'})
+        resulting_processing_status = response.json().get('processing_status', None)
+        if resulting_processing_status is not None:
+            PROCESSING_STATUS.update(resulting_processing_status)
             
-        
+        success = response.json().get('success', False)
         
         if success:
             return jsonify({'message': 'File processed successfully'})
