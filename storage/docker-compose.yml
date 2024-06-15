@@ -14,33 +14,5 @@ services:
     volumes:
       - minio-data:/data
 
-  web:
-    build: .
-    container_name: video_uploader
-    ports:
-      - "3000:3000"
-    environment:
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-    depends_on:
-      - minio
-
-  backend:
-    build:
-      context: ./backend # Update with the relative path to your Flask backend
-      dockerfile: Dockerfile
-    container_name: flask_backend
-    ports:
-      - "5001:5001"
-    environment:
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-    depends_on:
-      - minio
-
 volumes:
   minio-data:
