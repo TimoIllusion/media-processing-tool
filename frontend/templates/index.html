@@ -12,13 +12,15 @@
         <div class="section">
             <h2>Upload Files</h2>
             <form id="upload-form" enctype="multipart/form-data">
-              <input type="file" name="videos" id="videos" accept="video/*" multiple>
-              <button type="button" class="info-button" onclick="uploadFiles()">Upload Files</button>
-              <br><br>
-              <input type="file" name="directory" id="directory" accept="video/*" webkitdirectory>
-              <button type="button" class="info-button" onclick="uploadDirectory()">Upload Directory</button>
+                <div class="upload-group">
+                    <input type="file" name="videos" id="videos" accept="video/*" multiple>
+                    <button type="button" class="info-button" onclick="uploadFiles()">Upload Files</button>
+                </div>
+                <div class="upload-group">
+                    <input type="file" name="directory" id="directory" accept="video/*" webkitdirectory>
+                    <button type="button" class="info-button" onclick="uploadDirectory()">Upload Directory</button>
+                </div>
             </form>
-          </form>
             <div class="buttons">
                 <button type="button" class="info-button" onclick="listUploadedFiles()">List Current Uploaded Files</button>
                 <button type="button" class="delete-button" onclick="deleteAllInputFiles()">Delete All Uploaded Files</button>
