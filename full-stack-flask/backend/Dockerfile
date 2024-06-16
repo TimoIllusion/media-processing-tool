@@ -13,12 +13,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 5001
-
 # Fix for missing libGL.so.1
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install libgl1 libglib2.0-0 -y
 
+# Define environment variable
+ENV FLASK_APP=app.py
+
 # Run the application
-CMD ["python", "app.py"]
+CMD ["flask", "run", "--host=0.0.0.0"]

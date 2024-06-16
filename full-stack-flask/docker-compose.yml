@@ -1,24 +1,6 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
-    ports:
-      - "5000:5000"
-    volumes:
-      - .:/usr/src/app
-    environment:
-      FLASK_ENV: development
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: '0'
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
-      INPUT_BUCKET_NAME: input-bucket
-      OUTPUT_BUCKET_NAME: output-bucket
-      BACKEND_URL: http://localhost:5000
-    depends_on:
-      - minio
 
   minio:
     image: quay.io/minio/minio
@@ -33,5 +15,44 @@ services:
     volumes:
       - minio-data:/data
 
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./frontend:/usr/src/app
+    environment:
+      FLASK_ENV: development
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      INPUT_BUCKET_NAME: video-uploads
+      OUTPUT_BUCKET_NAME: output
+      BACKEND_URL: http://backend:5001
+    depends_on:
+      - minio
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      FLASK_ENV: development
+      BACKEND_PORT: 5001
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      INPUT_BUCKET_NAME: video-uploads
+      OUTPUT_BUCKET_NAME: output
+    depends_on:
+      - minio
+
 volumes:
   minio-data:
+

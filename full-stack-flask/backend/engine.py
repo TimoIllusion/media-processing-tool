@@ -18,7 +18,7 @@ class AIBackend:
             f"{BackendConfig.STORAGE_ENDPOINT}:{BackendConfig.STORAGE_PORT}",
             access_key=BackendConfig.STORAGE_ACCESS_KEY,
             secret_key=BackendConfig.STORAGE_SECRET_KEY,
-            secure=BackendConfig.USE_SSL
+            secure=False,
             )
         
         self.input_bucket = BackendConfig.INPUT_BUCKET_NAME

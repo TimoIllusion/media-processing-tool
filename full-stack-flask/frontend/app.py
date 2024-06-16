@@ -13,7 +13,7 @@ minioClient = Minio(
     f"{MINIO_ENDPOINT}:{MINIO_PORT}",
     access_key=MINIO_ACCESS_KEY,
     secret_key=MINIO_SECRET_KEY,
-    secure=MINIO_USE_SSL
+    secure=False,
 )
 
 # Ensure both buckets exist
