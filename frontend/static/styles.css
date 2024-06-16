@@ -1,70 +1,94 @@
 body {
   font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background-color: #f4f4f4;
-}
-h1 {
-  color: #333;
-  margin-top: 20px;
-}
-form {
+  background-color: #f4f4f9;
   margin: 20px;
   padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
   background: #fff;
-  border-radius: 5px;
+  padding: 20px;
+  border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
-input[type="file"] {
-  display: block;
-  margin-bottom: 10px;
+
+.section {
+  margin-bottom: 20px;
 }
-button {
-  color: white;
-  border: none;
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.buttons button {
   padding: 10px 20px;
   cursor: pointer;
-  border-radius: 5px;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
 }
-button:hover {
-  filter: brightness(85%);
+
+.buttons .info-button {
+  background-color: #007bff;
 }
-.status-container {
-  width: 80%;
-  max-width: 800px;
-  margin: 20px 0;
-  background: #fff;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  padding: 20px;
+
+.buttons .info-button:hover {
+  background-color: #0056b3;
 }
-.status-container p {
-  margin: 5px 0;
+
+.buttons .process-button {
+  background-color: #28a745;
 }
-.actions {
+
+.buttons .process-button:hover {
+  background-color: #218838;
+}
+
+.buttons .delete-button {
+  background-color: #dc3545;
+}
+
+.buttons .delete-button:hover {
+  background-color: #c82333;
+}
+
+#results, #upload-status, #process-status {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.progress {
+  margin-top: 10px;
+}
+
+form {
   display: flex;
   justify-content: center;
-  margin: 20px;
+  align-items: center;
+  gap: 10px;
 }
-.actions button {
-  margin: 0 10px;
-}
-.process-btn {
-  background-color: #28a745; /* Green */
-}
-.delete-btn {
-  background-color: #dc3545; /* Red */
-}
-.info-btn {
-  background-color: #007BFF; /* Blue */
-}
-a {
-  color: #007BFF;
-  text-decoration: none;
-}
-a:hover {
-  text-decoration: underline;
+
+/* Footer CSS */
+.footer {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: #f3f3f3;
 }
