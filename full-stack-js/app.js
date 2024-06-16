@@ -43,7 +43,7 @@ const upload = multer({ storage: storage });
 
 app.use(express.static('public'));
 
-app.post('/upload', upload.array('videos', 10), (req, res) => {
+app.post('/upload', upload.array('videos', 1000), (req, res) => {
   const files = req.files;
   if (!files || files.length === 0) {
     return res.status(400).send('No files uploaded.');
