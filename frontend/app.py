@@ -29,7 +29,8 @@ ensure_bucket_exists(Config.OUTPUT_BUCKET_NAME)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    minio_url = os.getenv('MINIO_INTERFACE_EXTERNAL_URL', 'http://localhost:9001')
+    return render_template('index.html', minio_url=minio_url)
 
 @app.route('/upload', methods=['POST'])
 def upload():
