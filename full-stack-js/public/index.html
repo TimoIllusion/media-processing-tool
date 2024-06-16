@@ -10,7 +10,10 @@
   <h1>Video Uploading and Processing</h1>
   <form id="uploadForm" enctype="multipart/form-data">
     <input type="file" name="videos" id="videos" accept="video/*" multiple>
-    <button type="submit">Upload</button>
+    <button type="button" onclick="uploadFiles()">Upload Files</button>
+    <br><br>
+    <input type="file" name="directory" id="directory" accept="video/*" webkitdirectory>
+    <button type="button" onclick="uploadDirectory()">Upload Directory</button>
   </form>
   
   <div id="upload-status" class="status-container"></div>
@@ -18,17 +21,16 @@
   <div id="results" class="status-container"></div>
   
   <div class="actions">
-    <button onclick="processFiles()">Process Files</button>
-    <button onclick="resetProcessingState()">Reset Processing State</button>
-    <button onclick="checkAllStatus()">Check All Status</button>
-    <button onclick="downloadAllResults()">Download All Results</button>
-    <button onclick="deleteAllInputFiles()">Delete All Input Files</button>
-    <button onclick="deleteAllOutputFiles()">Delete All Output Files</button>
+    <button type="button" onclick="processFiles()">Process Files</button>
+    <button type="button" onclick="resetProcessingState()">Reset Processing State</button>
+    <button type="button" onclick="checkAllStatus()">Check All Status</button>
+    <button type="button" onclick="downloadAllResults()">Download All Results</button>
+    <button type="button" onclick="deleteAllInputFiles()">Delete All Input Files</button>
+    <button type="button" onclick="deleteAllOutputFiles()">Delete All Output Files</button>
   </div>
 
   <script>
-    document.getElementById('uploadForm').addEventListener('submit', function(event) {
-      event.preventDefault();
+    function uploadFiles() {
       const formData = new FormData();
       const files = document.getElementById('videos').files;
       for (let i = 0; i < files.length; i++) {
@@ -45,7 +47,26 @@
       }).catch(error => {
         console.error('Error:', error);
       });
-    });
+    }
+
+    function uploadDirectory() {
+      const formData = new FormData();
+      const files = document.getElementById('directory').files;
+      for (let i = 0; i < files.length; i++) {
+        formData.append('videos', files[i], files[i].webkitRelativePath || files[i].name);
+      }
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      }).then(response => response.text())
+      .then(result => {
+        alert(result);
+        listUploadedFiles(); // Call listUploadedFiles to refresh the list
+      }).catch(error => {
+        console.error('Error:', error);
+      });
+    }
 
     async function processFiles() {
       const processStatusDiv = document.getElementById('process-status');
