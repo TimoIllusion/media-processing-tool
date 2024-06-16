@@ -1,15 +1,15 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Copy the current directory contents into the container
+# Set the working directory
+WORKDIR /app
+
+# Copy the rest of the application code
 COPY . .
 
-# Install any needed packages specified in requirements.txt
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-
 
 # Run app.py when the container launches
 CMD ["python", "app.py"]
