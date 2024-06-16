@@ -10,10 +10,10 @@
   <h1>Video Uploading and Processing</h1>
   <form id="uploadForm" enctype="multipart/form-data">
     <input type="file" name="videos" id="videos" accept="video/*" multiple>
-    <button type="button" onclick="uploadFiles()">Upload Files</button>
+    <button type="button" class="info-btn" onclick="uploadFiles()">Upload Files</button>
     <br><br>
     <input type="file" name="directory" id="directory" accept="video/*" webkitdirectory>
-    <button type="button" onclick="uploadDirectory()">Upload Directory</button>
+    <button type="button" class="info-btn" onclick="uploadDirectory()">Upload Directory</button>
   </form>
   
   <div id="upload-status" class="status-container"></div>
@@ -21,12 +21,12 @@
   <div id="results" class="status-container"></div>
   
   <div class="actions">
-    <button type="button" onclick="processFiles()">Process Files</button>
-    <button type="button" onclick="resetProcessingState()">Reset Processing State</button>
-    <button type="button" onclick="checkAllStatus()">Check All Status</button>
-    <button type="button" onclick="downloadAllResults()">Download All Results</button>
-    <button type="button" onclick="deleteAllInputFiles()">Delete All Input Files</button>
-    <button type="button" onclick="deleteAllOutputFiles()">Delete All Output Files</button>
+    <button type="button" class="process-btn" onclick="processFiles()">Process Files</button>
+    <button type="button" class="info-btn" onclick="resetProcessingState()">Reset Processing State</button>
+    <button type="button" class="info-btn" onclick="checkAllStatus()">Check All Status</button>
+    <button type="button" class="info-btn" onclick="downloadAllResults()">Download All Results</button>
+    <button type="button" class="delete-btn" onclick="deleteAllInputFiles()">Delete All Input Files</button>
+    <button type="button" class="delete-btn" onclick="deleteAllOutputFiles()">Delete All Output Files</button>
   </div>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
