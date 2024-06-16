@@ -36,7 +36,11 @@ def index():
 def upload():
     files = request.files.getlist('videos')
     if not files:
-        return "No files uploaded.", 400
+        return "ERROR: No files uploaded.", 400
+
+    filenames = [os.path.basename(file.filename) for file in files]
+    if len(filenames) != len(set(filenames)):
+        return "ERROR: All filenames must be unique.", 400
 
     upload_results = []
     for file in files:
