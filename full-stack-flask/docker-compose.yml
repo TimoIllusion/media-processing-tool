@@ -24,7 +24,6 @@ services:
     volumes:
       - ./frontend:/usr/src/app
     environment:
-      FLASK_ENV: development
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minioadmin
@@ -42,7 +41,6 @@ services:
     ports:
       - "5001:5001"
     environment:
-      FLASK_ENV: development
       BACKEND_PORT: 5001
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000

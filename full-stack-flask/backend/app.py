@@ -45,6 +45,10 @@ def check_status(filename):
         return jsonify({'status': 'File not yet processed.'}), 404
     else:
         return jsonify(PROCESSING_STATUS[filename])
+    
+@app.route('/status', methods=['GET'])
+def app_status():
+    return jsonify("RUNNING")
 
     
 @app.route('/reset', methods=['GET'])
